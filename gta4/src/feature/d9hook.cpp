@@ -1,142 +1,203 @@
 #include "feature/d9hook.hpp"
+#include "feature/d9draw.hpp"
 #include "console.hpp"
 #include "polyhook2/Detour/x86Detour.hpp"
-
 #include "imgui/backends/imgui_impl_dx9.h"
 #include "imgui/backends/imgui_impl_win32.h"
 
-HWND d9::window = 0;
-HMODULE d9::hMod = 0;
-d9::WNDPROC d9::oWndProc = 0;
-std::uint64_t d9::oDrawIndexedPrimitive = 0;
-std::uint64_t d9::oEndScene = 0;
-std::uint64_t d9::oReset = 0;
-bool alive = false;
-bool init = false;
+LPDIRECT3DDEVICE9 d9::pDevice = nullptr; // Direct3D9 Device Object
+std::uint64_t d9::oEndScene = NULL; // Pointer of the original EndScene function
+std::uint64_t d9::oReset = NULL; // Pointer of the original Reset function
+HWND d9::window = nullptr; // Window of the current process
+HMODULE d9::hDDLModule = nullptr; // HMODULE of the DLL
 
-LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-
-	if (true && ImGui_ImplWin32_WndProcHandler(hWnd, uMsg, wParam, lParam))
-		return true;
-
-	return CallWindowProc(d9::oWndProc, hWnd, uMsg, wParam, lParam);
-}
+int d9::windowHeight = 0; // Height of the window
+int d9::windowWidth = 0; // Width of the window
+void* d9::d3d9Device[119]; // Array of pointer of the DirectX functions.
+WNDPROC d9::OWndProc = nullptr; // Pointer of the original window message handler.
 
 PLH::x86Detour* EndSceneHook;
 PLH::x86Detour* ResetHook;
-bool d9init()
+
+/**
+    @brief : Function that hook the Reset and EndScene function.
+**/
+void d9::HookDirectX()
 {
-    LPDIRECT3D9 d3d = NULL;
-    LPDIRECT3DDEVICE9 d3ddev = NULL;
-    HWND tmpWnd = CreateWindowA("BUTTON", "Temp Window", WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 300, 300, NULL, NULL, d9::hMod, NULL);
-	if (tmpWnd == NULL)
+	if (GetD3D9Device(d3d9Device, sizeof(d3d9Device)))
 	{
-        Console::error("Failed to create window...");
-		return false;
+		EndSceneHook = new PLH::x86Detour((std::uint64_t)d3d9Device[42], (std::uint64_t)&d9draw::hkEndScene, &d9::oEndScene);
+		ResetHook = new PLH::x86Detour((std::uint64_t)d3d9Device[16], (std::uint64_t)&hkReset, &d9::oReset);
+		EndSceneHook->hook();
+		ResetHook->hook();
+	}
+}
+
+/**
+    @brief : Function that unhook Reset and EnScene functions, and also disable the window message handler.
+**/
+void d9::UnHookDirectX()
+{
+	if (d9draw::bInit)
+	{
+		UnHookWindow();
+		ImGui_ImplDX9_Shutdown();
+		ImGui_ImplWin32_Shutdown();
+		ImGui::DestroyContext();
 	}
 
-	d3d = Direct3DCreate9(D3D_SDK_VERSION);
-	if (d3d == NULL)
-	{
-        Console::error("Failed to create d9 device...");
-		DestroyWindow(tmpWnd);
-		return false;
-	}
+	d9draw::bInit = FALSE;
 
-    D3DPRESENT_PARAMETERS d3dpp;
-	ZeroMemory(&d3dpp, sizeof(d3dpp));
-	d3dpp.Windowed = TRUE;
+	EndSceneHook->unHook();
+	ResetHook->unHook();
+}
+
+/**
+    @brief : Function that enumerate windows.
+**/
+BOOL CALLBACK d9::enumWind(const HWND handle, LPARAM lp)
+{
+	DWORD procID;
+	GetWindowThreadProcessId(handle, &procID);
+	if (GetCurrentProcessId() != procID)
+		return TRUE;
+
+	window = handle;
+	return FALSE;
+}
+
+/**
+    @brief : Function that retrieve the window of the current process.
+    @retval : window of the current process.
+**/
+HWND d9::GetProcessWindow()
+{
+	window = nullptr;
+
+	EnumWindows(enumWind, NULL);
+
+	RECT size;
+	if (window == nullptr)
+		return nullptr;
+
+	GetWindowRect(window, &size);
+
+	windowWidth = size.right - size.left;
+	windowHeight = size.bottom - size.top;
+
+	windowHeight -= 29;
+	windowWidth -= 5;
+
+	return window;
+}
+
+/**
+    @brief : Function that get a Direct3D9 Device Object. (https://guidedhacking.com/threads/get-direct3d9-and-direct3d11-devices-dummy-device-method.11867/)
+    @param  pTable : Array of functions pointer.
+    @param  size   : Size of the array of pointers.
+    @retval : True if the function succeed else False.
+**/
+BOOL d9::GetD3D9Device(void** pTable, const size_t size)
+{
+	if (!pTable)
+		return FALSE;
+
+	IDirect3D9* pD3D = Direct3DCreate9(D3D_SDK_VERSION);
+	if (!pD3D)
+		return FALSE;
+
+	IDirect3DDevice9* pDummyDevice = nullptr;
+
+	D3DPRESENT_PARAMETERS d3dpp = {};
 	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dpp.hDeviceWindow = tmpWnd;
-	d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
+	d3dpp.hDeviceWindow = GetProcessWindow();
+	d3dpp.Windowed = (GetWindowLongPtr(d3dpp.hDeviceWindow, GWL_STYLE) & WS_POPUP) != 0 ? FALSE : TRUE;
 
-	HRESULT result = d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, tmpWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &d3ddev);
-	if (result != D3D_OK)
+	if (HRESULT dummyDevCreated = pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &pDummyDevice); dummyDevCreated != S_OK)
 	{
-        Console::error("CreateDevice did not return D3D_OK, aborting...");
-		d3d->Release();
-		DestroyWindow(tmpWnd);
-		return 0;
+		d3dpp.Windowed = !d3dpp.Windowed;
+		dummyDevCreated = pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, d3dpp.hDeviceWindow, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &pDummyDevice);
+
+		if (dummyDevCreated != S_OK)
+		{
+			pD3D->Release();
+			return FALSE;
+		}
 	}
 
-    DWORD* dVtable = (DWORD*)d3ddev;
-	dVtable = (DWORD*)dVtable[0];
-
-    EndSceneHook = new PLH::x86Detour(static_cast<std::uint64_t>(dVtable[42]), (std::uint64_t)&d9::EndScene_hook, &d9::oEndScene);
-    ResetHook = new PLH::x86Detour(static_cast<std::uint64_t>(dVtable[16]), (std::uint64_t)&d9::Reset_hook, &d9::oReset);
-
-    EndSceneHook->hook();
-    ResetHook->hook();
-
-    d9::oWndProc = (d9::WNDPROC)SetWindowLongPtr(FindWindowA(NULL, "GTAIV"), GWLP_WNDPROC, (LONG_PTR)WndProc);
-    d3ddev->Release();
-	d3d->Release();
-	DestroyWindow(tmpWnd);
-    return true;
+	memcpy(pTable, *(void***)(pDummyDevice), size);
+	pDummyDevice->Release();
+	pD3D->Release();
+	return TRUE;
 }
 
-void d9::hook()
+/**
+	@brief : Function that setup the WndProc callback function.
+**/
+void d9::HookWindow()
 {
-    if (d9init())
-        Console::log("Success DX9 Hook");
+	OWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)WndProc);
 }
 
-void d9::unhook()
+
+/**
+    @brief : Function that disable the WndProc callback function.
+**/
+void d9::UnHookWindow()
 {
-    alive = false;
-    EndSceneHook->unHook();
-    ResetHook->unHook();
+	SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)OWndProc);
 }
 
-HRESULT APIENTRY d9::EndScene_hook(LPDIRECT3DDEVICE9 device)
+/**
+    @brief : A callback function, which you define in your application, that processes messages sent to a window. (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nc-winuser-wndproc)
+    @param  hWnd : A handle to the window.
+    @param  msg : The message.
+    @param  wParam : Additional message information.
+    @param  lParam : Additional message information.
+    @retval : The return value is the result of the message processing, and depends on the message sent.
+**/
+LRESULT WINAPI d9::WndProc(const HWND hWnd, const UINT msg, const WPARAM wParam, const LPARAM lParam)
 {
-	if (!init)
+	if (d9draw::bDisplay && ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 	{
-		init = true;
-        alive = true;
-
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO();
-
-		ImGui_ImplWin32_Init(FindWindowA(NULL, "GTAIV"));
-
-		ImGui_ImplDX9_Init(device);
+		ImGui::GetIO().MouseDrawCursor = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+		return true;	
 	}
 
-	ImGui_ImplDX9_NewFrame();
-	ImGui_ImplWin32_NewFrame();
-	ImGui::NewFrame();
+	if(d9draw::bInit)
+		ImGui::GetIO().MouseDrawCursor = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 
-	ImGui::ShowDemoWindow();
-	ImGui::EndFrame();
-	ImGui::Render();
+	if (msg == WM_CLOSE)
+	{
+		UnHookDirectX();
+		UnHookWindow();
+		TerminateProcess(GetCurrentProcess(), 0);
+	}
 
-	ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-    if (!alive)
-    {
-        oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)(oWndProc));
-        ImGui_ImplDX9_Shutdown();
-        ImGui_ImplWin32_Shutdown();
-        ImGui::DestroyContext();
-        PLH::FnCast(oEndScene, EndScene())(device);
-        return 0;
-    }
-    return PLH::FnCast(oEndScene, EndScene())(device);
+	if (ImGui::GetIO().WantCaptureMouse)
+	{
+		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
+			return true;
+		return false;
+	}
+	
+	return CallWindowProc(OWndProc, hWnd, msg, wParam, lParam);
 }
-HRESULT APIENTRY d9::Reset_hook(LPDIRECT3DDEVICE9 device, D3DPRESENT_PARAMETERS * params)
+
+/**
+    @brief : Hook of the function IDirect3DDevice9::Reset, to handle resize, etc..
+    @param  pPresentationParameters : parameters passed to the original function. 
+    @retval : return value of the original function.
+**/
+HRESULT d9::hkReset(D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
-    if(alive)
-    {
-        ImGui_ImplDX9_InvalidateDeviceObjects();
-        const auto result = PLH::FnCast(oReset, Reset())(device, params);
-        ImGui_ImplDX9_CreateDeviceObjects();
-        return result;
-    }
-    else {
-        return PLH::FnCast(oReset, Reset())(device, params);
-    }
-}
-HRESULT APIENTRY d9::DrawIndexedPrimitive_hook(LPDIRECT3DDEVICE9 pD3D9, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)
-{
-    return E_NOTIMPL;
+	d9draw::bSetPos = true;
+	UnHookWindow();
+	d9draw::bInit = FALSE;
+	ImGui_ImplDX9_Shutdown();
+	ImGui_ImplWin32_Shutdown();
+	ImGui::DestroyContext();
+	pDevice = nullptr;
+
+	return PLH::FnCast(d9::oReset, tReset())(pPresentationParameters);
 }

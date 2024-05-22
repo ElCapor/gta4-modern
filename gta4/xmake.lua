@@ -14,6 +14,7 @@ target("gta4dll")
     add_headerfiles("../extern/vendor/imgui/backends/imgui_impl_win32.h", "../extern/vendor/imgui/backends/imgui_impl_dx9.h")
     -- Include dirs
     add_includedirs("include", "../extern/vendor")
+    add_linkdirs("../extern/vendor/detours/x86")
     add_files("src/**.cpp")
 
-    add_links("d3d9")
+    add_links("d3d9", "detours.lib")

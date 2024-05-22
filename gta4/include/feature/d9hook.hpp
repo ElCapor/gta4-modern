@@ -4,27 +4,33 @@
 #include <cstdint>
 extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-namespace d9
+using tEndScene = HRESULT(APIENTRY*)(LPDIRECT3DDEVICE9 pDevice);
+using tReset = HRESULT(APIENTRY*)(D3DPRESENT_PARAMETERS* pPresentationParameters);
+
+class d9
 {
-    extern HWND window;
-    extern HMODULE hMod;
-    extern WNDPROC oWndProc;
-    
-    typedef HRESULT(APIENTRY* DrawIndexedPrimitive)(LPDIRECT3DDEVICE9, D3DPRIMITIVETYPE, INT, UINT, UINT, UINT, UINT);
-    HRESULT APIENTRY DrawIndexedPrimitive_hook(LPDIRECT3DDEVICE9, D3DPRIMITIVETYPE, INT, UINT, UINT, UINT, UINT);
-    extern std::uint64_t oDrawIndexedPrimitive;
+public:
+	static IDirect3DDevice9* pDevice;
+	static std::uint64_t oEndScene;
+	static HWND window;
+	static HMODULE hDDLModule;
 
-    typedef HRESULT(APIENTRY* EndScene) (LPDIRECT3DDEVICE9);
-    HRESULT APIENTRY EndScene_hook(LPDIRECT3DDEVICE9);
-    extern std::uint64_t oEndScene;
+	static void HookDirectX();
+	static void UnHookDirectX();
+	static void HookWindow();
+	static void UnHookWindow();
 
-    typedef HRESULT(APIENTRY* Reset)(LPDIRECT3DDEVICE9, D3DPRESENT_PARAMETERS*);
-    HRESULT APIENTRY Reset_hook(LPDIRECT3DDEVICE9, D3DPRESENT_PARAMETERS*);
-    extern std::uint64_t oReset;
+private:
+	static int windowHeight, windowWidth;
+	static void* d3d9Device[119];
+	static WNDPROC OWndProc;
+	static std::uint64_t oReset;
 
-    typedef LRESULT(CALLBACK* WNDPROC)(HWND, UINT, WPARAM, LPARAM);
 
-    void hook();
-    void unhook();
-}
+	static BOOL CALLBACK enumWind(HWND handle, LPARAM lp);
+	static HWND GetProcessWindow();
+	static BOOL GetD3D9Device(void** pTable, size_t size);
+	static LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+	static HRESULT APIENTRY hkReset(D3DPRESENT_PARAMETERS* pPresentationParameters);
+};
 #endif /* D9HOOK_HPP */

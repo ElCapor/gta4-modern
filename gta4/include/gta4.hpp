@@ -6,6 +6,7 @@ namespace gta4
 {
     DWORD WINAPI MainThread();
     DWORD WINAPI EjectSelf();
+    void shutdown();
 }
 
 #endif /* GTA4_HPP */
