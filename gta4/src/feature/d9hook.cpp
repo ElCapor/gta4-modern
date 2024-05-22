@@ -21,6 +21,7 @@ LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 }
 
 PLH::x86Detour* EndSceneHook;
+PLH::x86Detour* ResetHook;
 bool d9init()
 {
     LPDIRECT3D9 d3d = NULL;
@@ -60,7 +61,10 @@ bool d9init()
 	dVtable = (DWORD*)dVtable[0];
 
     EndSceneHook = new PLH::x86Detour(static_cast<std::uint64_t>(dVtable[42]), (std::uint64_t)&d9::EndScene_hook, &d9::oEndScene);
+    ResetHook = new PLH::x86Detour(static_cast<std::uint64_t>(dVtable[16]), (std::uint64_t)&d9::Reset_hook, &d9::oReset);
+
     EndSceneHook->hook();
+    ResetHook->hook();
 
     d9::oWndProc = (d9::WNDPROC)SetWindowLongPtr(FindWindowA(NULL, "GTAIV"), GWLP_WNDPROC, (LONG_PTR)WndProc);
     d3ddev->Release();
@@ -77,15 +81,12 @@ void d9::hook()
 
 void d9::unhook()
 {
-    EndSceneHook->unHook();
     ImGui_ImplDX9_Shutdown();
 	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
-    
+    EndSceneHook->unHook();
+    ResetHook->unHook();
 }
-
-
-
 
 HRESULT APIENTRY d9::EndScene_hook(LPDIRECT3DDEVICE9 device)
 {
@@ -114,7 +115,10 @@ HRESULT APIENTRY d9::EndScene_hook(LPDIRECT3DDEVICE9 device)
 }
 HRESULT APIENTRY d9::Reset_hook(LPDIRECT3DDEVICE9 device, D3DPRESENT_PARAMETERS * params)
 {
-    return E_NOTIMPL;
+    ImGui_ImplDX9_InvalidateDeviceObjects();
+    const auto result = PLH::FnCast(oReset, Reset())(device, params);
+    ImGui_ImplDX9_CreateDeviceObjects();
+    return result;
 }
 HRESULT APIENTRY d9::DrawIndexedPrimitive_hook(LPDIRECT3DDEVICE9 pD3D9, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)
 {
