@@ -15,3 +15,5 @@ target("gta4dll")
     -- Include dirs
     add_includedirs("include", "../extern/vendor")
     add_files("src/**.cpp")
+
+    add_links("d3d9")
