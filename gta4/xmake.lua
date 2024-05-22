@@ -1,11 +1,9 @@
 add_rules("mode.release", "mode.debug")
-add_requires("polyhook")
 target("gta4dll")
     -- Project Settings
     set_kind("shared")
     set_languages("cxx23")
     
-    add_packages("polyhook")
     
     -- ImGui
     add_files("../extern/vendor/imgui/*.cpp")
