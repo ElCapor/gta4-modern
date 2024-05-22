@@ -11,3 +11,5 @@ gta4 -> all the dll code
 
 # Note
 im tired of writing sick readmes for stuff i dont finish :skull:
+
+BTW the dll unloads itself when u tell it to

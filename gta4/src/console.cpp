@@ -12,6 +12,10 @@ void Console::Open()
 void Console::Close()
 {
     fclose(fp);
+    HWND hwnd = GetConsoleWindow();
+    if (hwnd != nullptr) {
+        PostMessage(hwnd, WM_CLOSE, 0, 0);
+    }
     FreeConsole();
 }
 
