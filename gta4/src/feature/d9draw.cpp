@@ -2,7 +2,7 @@
 #include "feature/d9hook.hpp"
 #include <imgui/backends/imgui_impl_dx9.h>
 #include <imgui/backends/imgui_impl_win32.h>
-#include <polyhook2/Detour/x86Detour.hpp>
+
 BOOL d9draw::bInit = FALSE; // Status of the initialization of ImGui.
 bool d9draw::bDisplay = true; // Status of the menu display.
 bool d9draw::bSetPos = false; // Status to update ImGui window size / position.
@@ -29,7 +29,7 @@ HRESULT d9draw::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
 	{
 		d9::UnHookDirectX();
 		CreateThread(nullptr, 0, (LPTHREAD_START_ROUTINE)FreeLibrary, d9::hDDLModule, 0, nullptr);
-		return PLH::FnCast(d9::oEndScene, tEndScene())(D3D9Device);
+		return d9::oEndScene(D3D9Device);
 	}
 
 	ImGui_ImplDX9_NewFrame();
@@ -64,7 +64,7 @@ HRESULT d9draw::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
 	ImGui::Render();
 	ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
 
-	return PLH::FnCast(d9::oEndScene, tEndScene())(D3D9Device);
+	return d9::oEndScene(D3D9Device);
 }
 
 /**

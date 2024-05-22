@@ -1,13 +1,13 @@
 #include "feature/d9hook.hpp"
 #include "feature/d9draw.hpp"
 #include "console.hpp"
-#include "polyhook2/Detour/x86Detour.hpp"
 #include "imgui/backends/imgui_impl_dx9.h"
 #include "imgui/backends/imgui_impl_win32.h"
+#include "detours.h"
 
 LPDIRECT3DDEVICE9 d9::pDevice = nullptr; // Direct3D9 Device Object
-std::uint64_t d9::oEndScene = NULL; // Pointer of the original EndScene function
-std::uint64_t d9::oReset = NULL; // Pointer of the original Reset function
+tEndScene d9::oEndScene = nullptr; // Pointer of the original EndScene function
+tReset d9::oReset = nullptr; // Pointer of the original Reset function
 HWND d9::window = nullptr; // Window of the current process
 HMODULE d9::hDDLModule = nullptr; // HMODULE of the DLL
 
@@ -16,9 +16,6 @@ int d9::windowWidth = 0; // Width of the window
 void* d9::d3d9Device[119]; // Array of pointer of the DirectX functions.
 WNDPROC d9::OWndProc = nullptr; // Pointer of the original window message handler.
 
-PLH::x86Detour* EndSceneHook;
-PLH::x86Detour* ResetHook;
-
 /**
     @brief : Function that hook the Reset and EndScene function.
 **/
@@ -26,10 +23,13 @@ void d9::HookDirectX()
 {
 	if (GetD3D9Device(d3d9Device, sizeof(d3d9Device)))
 	{
-		EndSceneHook = new PLH::x86Detour((std::uint64_t)d3d9Device[42], (std::uint64_t)&d9draw::hkEndScene, &d9::oEndScene);
-		ResetHook = new PLH::x86Detour((std::uint64_t)d3d9Device[16], (std::uint64_t)&hkReset, &d9::oReset);
-		EndSceneHook->hook();
-		ResetHook->hook();
+		oEndScene = (tEndScene)d3d9Device[42];
+		oReset = (tReset)d3d9Device[16];
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(PVOID&)oEndScene, d9draw::hkEndScene);
+		DetourAttach(&(PVOID&)oReset, hkReset);
+		DetourTransactionCommit();
 	}
 }
 
@@ -48,8 +48,11 @@ void d9::UnHookDirectX()
 
 	d9draw::bInit = FALSE;
 
-	EndSceneHook->unHook();
-	ResetHook->unHook();
+	DetourTransactionBegin();
+	DetourUpdateThread(GetCurrentThread());
+	DetourDetach(&(PVOID&)oEndScene, d9draw::hkEndScene);
+	DetourDetach(&(PVOID&)oReset, hkReset);
+	DetourTransactionCommit();
 }
 
 /**
@@ -199,5 +202,5 @@ HRESULT d9::hkReset(D3DPRESENT_PARAMETERS* pPresentationParameters)
 	ImGui::DestroyContext();
 	pDevice = nullptr;
 
-	return PLH::FnCast(d9::oReset, tReset())(pPresentationParameters);
+	return d9::oReset(pPresentationParameters);
 }

@@ -11,7 +11,7 @@ class d9
 {
 public:
 	static IDirect3DDevice9* pDevice;
-	static std::uint64_t oEndScene;
+	static tEndScene oEndScene;
 	static HWND window;
 	static HMODULE hDDLModule;
 
@@ -24,7 +24,7 @@ private:
 	static int windowHeight, windowWidth;
 	static void* d3d9Device[119];
 	static WNDPROC OWndProc;
-	static std::uint64_t oReset;
+	static tReset oReset;
 
 
 	static BOOL CALLBACK enumWind(HWND handle, LPARAM lp);
