@@ -1,0 +1,6 @@
+[submodule "extern/vendor/polyhook"]
+	path = extern/vendor/polyhook
+	url = https://github.com/stevemk14ebr/PolyHook_2_0.git
+[submodule "extern/vendor/imgui"]
+	path = extern/vendor/imgui
+	url = https://github.com/ocornut/imgui.git
