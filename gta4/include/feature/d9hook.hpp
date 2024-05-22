@@ -9,7 +9,7 @@ namespace d9
     extern HWND window;
     extern HMODULE hMod;
     extern WNDPROC oWndProc;
-
+    
     typedef HRESULT(APIENTRY* DrawIndexedPrimitive)(LPDIRECT3DDEVICE9, D3DPRIMITIVETYPE, INT, UINT, UINT, UINT, UINT);
     HRESULT APIENTRY DrawIndexedPrimitive_hook(LPDIRECT3DDEVICE9, D3DPRIMITIVETYPE, INT, UINT, UINT, UINT, UINT);
     extern std::uint64_t oDrawIndexedPrimitive;

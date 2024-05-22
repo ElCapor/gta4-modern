@@ -20,6 +20,6 @@ DWORD WINAPI gta4::MainThread()
 
 DWORD WINAPI gta4::EjectSelf()
 {
-    Sleep(100);
+    Sleep(5000);
     FreeLibraryAndExitThread(globals::hDll, 0);
 }

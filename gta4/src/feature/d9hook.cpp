@@ -11,6 +11,8 @@ d9::WNDPROC d9::oWndProc = 0;
 std::uint64_t d9::oDrawIndexedPrimitive = 0;
 std::uint64_t d9::oEndScene = 0;
 std::uint64_t d9::oReset = 0;
+bool alive = false;
+bool init = false;
 
 LRESULT __stdcall WndProc(const HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
@@ -81,19 +83,18 @@ void d9::hook()
 
 void d9::unhook()
 {
-    ImGui_ImplDX9_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
+    alive = false;
     EndSceneHook->unHook();
     ResetHook->unHook();
 }
 
 HRESULT APIENTRY d9::EndScene_hook(LPDIRECT3DDEVICE9 device)
 {
-    static bool init = true;
-	if (init)
+	if (!init)
 	{
-		init = false;
+		init = true;
+        alive = true;
+
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
 
@@ -111,14 +112,29 @@ HRESULT APIENTRY d9::EndScene_hook(LPDIRECT3DDEVICE9 device)
 	ImGui::Render();
 
 	ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
+    if (!alive)
+    {
+        oWndProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)(oWndProc));
+        ImGui_ImplDX9_Shutdown();
+        ImGui_ImplWin32_Shutdown();
+        ImGui::DestroyContext();
+        PLH::FnCast(oEndScene, EndScene())(device);
+        return 0;
+    }
     return PLH::FnCast(oEndScene, EndScene())(device);
 }
 HRESULT APIENTRY d9::Reset_hook(LPDIRECT3DDEVICE9 device, D3DPRESENT_PARAMETERS * params)
 {
-    ImGui_ImplDX9_InvalidateDeviceObjects();
-    const auto result = PLH::FnCast(oReset, Reset())(device, params);
-    ImGui_ImplDX9_CreateDeviceObjects();
-    return result;
+    if(alive)
+    {
+        ImGui_ImplDX9_InvalidateDeviceObjects();
+        const auto result = PLH::FnCast(oReset, Reset())(device, params);
+        ImGui_ImplDX9_CreateDeviceObjects();
+        return result;
+    }
+    else {
+        return PLH::FnCast(oReset, Reset())(device, params);
+    }
 }
 HRESULT APIENTRY d9::DrawIndexedPrimitive_hook(LPDIRECT3DDEVICE9 pD3D9, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount)
 {
