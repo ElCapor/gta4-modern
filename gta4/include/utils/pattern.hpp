@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <vector>
 #include <cstdint>
+#define ASLR(x) (x - 0x400000 + 0xE00000)
 /*
 Credits to Sub1to.
 I've benchmarked several sig scanners out there

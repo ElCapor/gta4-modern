@@ -3,6 +3,7 @@
 #include "globals.hpp"
 #include "utils/pattern.hpp"
 #include "feature/d9hook.hpp"
+#include "feature/rage/scr/scrThreadHook.hpp"
 DWORD WINAPI gta4::MainThread()
 {
     Console::Open();
@@ -11,6 +12,7 @@ DWORD WINAPI gta4::MainThread()
     Console::log("Base : ", std::hex, CMetaData::begin());
     d9::hDDLModule = globals::hDll;
     d9::HookDirectX();
+    rage::scr::hookScr();
     Console::Wait();
     //Console::log("Press any key to exit...");
     //Console::Close();
@@ -26,5 +28,6 @@ DWORD WINAPI gta4::EjectSelf()
 
 void gta4::shutdown()
 {
+    rage::scr::unhookScr();
     d9::UnHookDirectX();
 }
