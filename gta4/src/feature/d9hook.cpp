@@ -194,13 +194,8 @@ LRESULT WINAPI d9::WndProc(const HWND hWnd, const UINT msg, const WPARAM wParam,
 **/
 HRESULT d9::hkReset(D3DPRESENT_PARAMETERS* pPresentationParameters)
 {
-	d9draw::bSetPos = true;
-	UnHookWindow();
-	d9draw::bInit = FALSE;
-	ImGui_ImplDX9_Shutdown();
-	ImGui_ImplWin32_Shutdown();
-	ImGui::DestroyContext();
-	pDevice = nullptr;
-
-	return d9::oReset(pPresentationParameters);
+	ImGui_ImplDX9_InvalidateDeviceObjects();
+	const auto ret = d9::oReset(pPresentationParameters);
+	ImGui_ImplDX9_CreateDeviceObjects();
+	return ret;
 }

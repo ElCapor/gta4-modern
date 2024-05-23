@@ -14,8 +14,8 @@ DWORD WINAPI gta4::MainThread()
     d9::HookDirectX();
     rage::scr::hookScr();
     Console::Wait();
-    //Console::log("Press any key to exit...");
-    //Console::Close();
+    Console::log("Press any key to exit...");
+    Console::Close();
     //CreateThread(0, 0, (LPTHREAD_START_ROUTINE)gta4::EjectSelf, 0, 0, 0);
     return 0;
 }

@@ -23,9 +23,16 @@ void rage::scr::unhookScr()
     DetourDetach(&(PVOID&)::oGetScriptName, GetScriptName);
 	DetourTransactionCommit();
 }
+bool idk = false;
 const char *__fastcall GetScriptName(DWORD *_this, void *edx)
 {
+    if (!idk)
+    {
+        Console::log("TS ", std::hex, _this);
+        rage::scr::scrThread* thread = reinterpret_cast<rage::scr::scrThread*>(_this);
+        Console::log(thread->tExitMsg, "  ", thread->name);
+        idk = true;
+    }
     const char* name = oGetScriptName(_this);
-    Console::log("Get name ", name);
     return name;
 }
