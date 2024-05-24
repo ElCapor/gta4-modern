@@ -23,10 +23,10 @@ public:
         // init the structure
     }
 
-    bool find(ptrdiff_t offset)
+    void* find(ptrdiff_t offset)
     {
         target = hook::pattern(aob).get_first(offset);
-        return true;
+        return target;
     }
 };
 
@@ -35,9 +35,10 @@ namespace patterns
 {
     namespace events
     {
-        // 8B CE E8 ? ? ? ? 8B CE E8 ? ? ? ? 8B 46 28 C1 E8 0A
-        // offset =
         PATTERN automobile = "8B CE E8 ? ? ? ? 8B CE E8 ? ? ? ? 8B 46 28 C1 E8 0A";
+        PATTERN pad = "8B CE E8 ? ? ? ? 81 C6 84 3A 00 00";
+        PATTERN camera = "8B CE E8 ? ? ? ? 5F 5E B0 01 5B C3";
+        PATTERN drawing = "E8 ? ? ? ? 83 C4 08 E8 ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? 00 74 ?";
     }
 }
 
@@ -45,6 +46,9 @@ namespace patterns
 void FindPatterns()
 {
     Console::log("ATM : ",std::hex, patterns::events::automobile.find(9));
+    Console::log("PAD : ",std::hex, patterns::events::pad.find(2));
+    Console::log("CAMERA : ",std::hex, patterns::events::camera.find(2));
+    Console::log("DRAWING : ", std::hex, patterns::events::drawing.find(8));
 }
 
 #endif
