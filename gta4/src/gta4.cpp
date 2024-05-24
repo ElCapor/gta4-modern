@@ -4,14 +4,17 @@
 #include "utils/pattern.hpp"
 #include "feature/d9hook.hpp"
 #include "feature/rage/scr/scrThreadHook.hpp"
+#define NO_UI
 DWORD WINAPI gta4::MainThread()
 {
     Console::Open();
     Console::log("Hello, World!");
     CMetaData::init();
     Console::log("Base : ", std::hex, CMetaData::begin());
+    #ifndef NO_UI
     d9::hDDLModule = globals::hDll;
     d9::HookDirectX();
+    #endif
     rage::scr::hookScr();
     Console::Wait();
     Console::log("Press any key to exit...");
@@ -29,5 +32,7 @@ DWORD WINAPI gta4::EjectSelf()
 void gta4::shutdown()
 {
     rage::scr::unhookScr();
+    #ifndef NO_UI
     d9::UnHookDirectX();
+    #endif
 }

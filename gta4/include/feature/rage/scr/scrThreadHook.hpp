@@ -7,9 +7,10 @@ namespace rage
 
     namespace scr
     {
-        class scrThread
+        class GtaThread
         {
         public:
+        struct {
             void *pVTable; //0x0000
             int32_t iThreadId; //0x0004
             void *pHashTable; //0x0008
@@ -25,7 +26,25 @@ namespace rage
             void *pScriptStack; //0x0058
             char pad_005C[16]; //0x005C
             char *tExitMsg; //0x006C
-            char name[4]; //0x0070
+        } scrThread;
+        char szProgramName[24]; //0x0070
+        int32_t iSavedDeathArrestIP; //0x0088
+        int32_t iSavedDeathArrestFrameSP; //0x008C
+        int32_t iSavedDeathArrestStackOff; //0x0090
+        bool bOnMission; //0x0094
+        bool bScriptSafeForNetworkGame; //0x0095
+        bool bThisScriptShouldBeSaved; //0x0096
+        bool bPlayerControlInMissionCleanup; //0x0097
+        bool bClearHelpInMissionCleanup; //0x0098
+        bool bMiniGameScript; //0x0099
+        bool bAllowNonMiniGameTextMessages; //0x009A
+        bool bAllowOneTimeOnlyCommandToRun; //0x009B
+        bool bPaused; //0x009C
+        bool bCanBePaused; //0x009D
+        bool eHandleType; //0x009E
+        bool pad; //0x009F
+        int32_t iHandle; //0x00A0
+        bool bCanRemoveBlips; //0x00A4
         }; //Size: 0x070
 
         void hookScr();
