@@ -1393,7 +1393,7 @@ namespace EyeStep
 
 		std::string readRawHttp(const char* url)
 		{
-
+			return "";
 		}
 	}
 

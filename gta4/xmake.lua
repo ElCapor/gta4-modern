@@ -9,6 +9,9 @@ target("gta4dll")
     add_includedirs("../extern/vendor/imgui")
     add_files("../extern/vendor/imgui/backends/imgui_impl_win32.cpp", "../extern/vendor/imgui/backends/imgui_impl_dx9.cpp")
     add_headerfiles("../extern/vendor/imgui/backends/imgui_impl_win32.h", "../extern/vendor/imgui/backends/imgui_impl_dx9.h")
+
+    -- eyestep
+    add_files("../extern/vendor/eyestep/*.cpp")
     -- Include dirs
     add_includedirs("include", "../extern/vendor","../extern/vendor/detours/include")
     add_linkdirs("../extern/vendor/detours/x86")

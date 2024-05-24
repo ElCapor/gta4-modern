@@ -4,7 +4,8 @@
 #include "utils/pattern.hpp"
 #include "feature/d9hook.hpp"
 #include "feature/rage/scr/scrThreadHook.hpp"
-
+#include <eyestep/eyestep.h>
+#include <eyestep/eyestep_utility.h>
 #define NO_UI
 #define FEATURE_FIX_IV_SDK
 
@@ -39,16 +40,36 @@ namespace patterns
         PATTERN pad = "8B CE E8 ? ? ? ? 81 C6 84 3A 00 00";
         PATTERN camera = "8B CE E8 ? ? ? ? 5F 5E B0 01 5B C3";
         PATTERN drawing = "E8 ? ? ? ? 83 C4 08 E8 ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? 00 74 ?";
+        namespace hard { // these are hard to get
+            std::uint32_t GetPopulationConfigCall() // aka load event prior to the game launching
+            {
+                auto xref_result = EyeStep::scanner::scan_xrefs("common:/data/pedVariations.dat");
+                auto func = xref_result[0];
+                // we can't get prologue since it's a near function
+                func -= 7;
+                auto new_xref = EyeStep::scanner::scan_xrefs(func);
+                return new_xref[0];
+            }
+        }
     }
 }
 
 
+void SetupEyestep()
+{
+    EyeStep::open(GetCurrentProcess());
+}
+
 void FindPatterns()
 {
+    SetupEyestep();
     Console::log("ATM : ",std::hex, patterns::events::automobile.find(9));
     Console::log("PAD : ",std::hex, patterns::events::pad.find(2));
     Console::log("CAMERA : ",std::hex, patterns::events::camera.find(2));
     Console::log("DRAWING : ", std::hex, patterns::events::drawing.find(8));
+    Console::log("POPULATION STR ", std::hex, patterns::events::populationConfig.find(0));
+    
+    Console::log("XREF RESULT : ", std::hex, new_xref[0]);
 }
 
 #endif
