@@ -4,7 +4,6 @@ target("gta4dll")
     set_kind("shared")
     set_languages("cxx23")
     
-    
     -- ImGui
     add_files("../extern/vendor/imgui/*.cpp")
     add_includedirs("../extern/vendor/imgui")
@@ -14,5 +13,6 @@ target("gta4dll")
     add_includedirs("include", "../extern/vendor","../extern/vendor/detours/include")
     add_linkdirs("../extern/vendor/detours/x86")
     add_files("src/**.cpp")
+    remove_files("src/feature/rage/scr/scrThreadHook.cpp")
 
     add_links("d3d9", "detours.lib")
