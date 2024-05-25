@@ -96,8 +96,6 @@ namespace patterns
                 }
                 auto xref_result = EyeStep::scanner::scan_xrefs(address);
                 address = xref_result[0];
-
-                Console::log("Load Event ", std::hex, address);
                 return address;
             }
         }
