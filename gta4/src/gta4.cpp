@@ -40,6 +40,8 @@ namespace patterns
         PATTERN pad = "8B CE E8 ? ? ? ? 81 C6 84 3A 00 00";
         PATTERN camera = "8B CE E8 ? ? ? ? 5F 5E B0 01 5B C3";
         PATTERN drawing = "E8 ? ? ? ? 83 C4 08 E8 ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? 00 74 ?";
+        PATTERN inGameStartup = "56 E8 ? ? ? ? A3 ? ? ? ? 89 15 ? ? ? ? E8 ? ? ? ?";
+        PATTERN gameEvent = "83 ? ? 3B ? 7D ? 8B 1F 8B B6 80 00 00 00 8B ? 69 ? 88 00 00 00"; // this requires a check for D:E
         namespace hard { // these are hard to get
             std::uint32_t GetPopulationConfigCall() // aka load event prior to the game launching
             {
@@ -49,6 +51,38 @@ namespace patterns
                 func -= 7;
                 auto new_xref = EyeStep::scanner::scan_xrefs(func);
                 return new_xref[0];
+            }
+
+            std::uint32_t GetMountDeviceCall()
+            {
+                auto xref_result = EyeStep::scanner::scan_xrefs("commonimg:/");//
+                auto func = xref_result[0];
+                bool done = false;
+                while (!done) // a bit hacky but i got no choice ong
+                {
+                    func--;
+                    if (func%16==0)
+                    {
+                        if (EyeStep::util::readByte(func) == 0x81 && EyeStep::util::readByte(func+1) == 0xEC)
+                            done = true;
+                    }
+                }
+                xref_result = EyeStep::scanner::scan_xrefs(func);
+                func = xref_result[0];
+                return func;
+            }
+
+            std::uint32_t GetLoadEventCall()
+            {
+                auto pattern = hook::pattern(gameEvent.aob);
+                auto results = pattern.for_each_result([](hook::pattern_match it){
+                    if (EyeStep::util::readByte((std::uint32_t)it.get<uint32_t>() -1) == 0x41)
+                    {
+                        Console::log("Gay black nigga ");
+                    }
+                });
+                
+                return 0;
             }
         }
     }
@@ -67,9 +101,11 @@ void FindPatterns()
     Console::log("PAD : ",std::hex, patterns::events::pad.find(2));
     Console::log("CAMERA : ",std::hex, patterns::events::camera.find(2));
     Console::log("DRAWING : ", std::hex, patterns::events::drawing.find(8));
-    Console::log("POPULATION STR ", std::hex, patterns::events::populationConfig.find(0));
+    Console::log("EVENT PRIORITY ", std::hex, patterns::events::hard::GetPopulationConfigCall());
+    Console::log("IN GAME STARTUP", std::hex, patterns::events::inGameStartup.find(17));
+    Console::log("Mount device event" , std::hex, patterns::events::hard::GetMountDeviceCall());
+    Console::log("idk bro...", std::hex, patterns::events::hard::GetLoadEventCall());
     
-    Console::log("XREF RESULT : ", std::hex, new_xref[0]);
 }
 
 #endif
