@@ -75,14 +75,30 @@ namespace patterns
             std::uint32_t GetLoadEventCall()
             {
                 auto pattern = hook::pattern(gameEvent.aob);
-                auto results = pattern.for_each_result([](hook::pattern_match it){
-                    if (EyeStep::util::readByte((std::uint32_t)it.get<uint32_t>() -1) == 0x41)
+                std::uint32_t address = 0;
+                if (pattern.size() > 1)
+                {
+                    address = (std::uint32_t)pattern.get(2).get<std::uint32_t>(0);
+                }
+                else {
+                    address = (std::uint32_t)pattern.get_first(0);
+                }
+
+                bool done = false;
+                while (!done) // a bit hacky but i got no choice ong
+                {
+                    address--;
+                    if (address%16==0)
                     {
-                        Console::log("Gay black nigga ");
+                        if ((EyeStep::util::readByte(address) == 0x81 || EyeStep::util::readByte(address) == 0x83) && EyeStep::util::readByte(address+1) == 0xEC)
+                            done = true;
                     }
-                });
-                
-                return 0;
+                }
+                auto xref_result = EyeStep::scanner::scan_xrefs(address);
+                address = xref_result[0];
+
+                Console::log("Load Event ", std::hex, address);
+                return address;
             }
         }
     }
