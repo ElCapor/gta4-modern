@@ -6,6 +6,7 @@
 #include "feature/rage/scr/scrThreadHook.hpp"
 #include <eyestep/eyestep.h>
 #include <eyestep/eyestep_utility.h>
+#include <functional>
 #define NO_UI
 #define FEATURE_FIX_IV_SDK
 
@@ -117,10 +118,35 @@ void SetupEyestep()
     EyeStep::open(GetCurrentProcess());
 }
 
+template <typename T>
+T findpattern(const char* name, std::function<std::uint32_t()> fn)
+{
+    Console::log("[PATTERN] Looking up ", name, "...");
+    std::uint32_t result = fn();
+    Console::log("[PATTERN] RESULT : ", std::hex, result);
+    return static_cast<T>(result);
+
+}
+
+template <typename T>
+T findpattern(const char* name, std::function<void*()> fn)
+{
+    return findpattern<T>(name, [fn]() -> std::uint32_t {return reinterpret_cast<std::uint32_t>(fn());});
+}
 void FindPatterns()
 {
     SetupEyestep();
-    Console::log("ATM : ",std::hex, patterns::events::automobile.find(9));
+    auto atm = findpattern<std::uint32_t>("processAutomobileEvent", []() -> void* {return patterns::events::automobile.find(9);});
+    auto pad = findpattern<std::uint32_t>("processAutomobileEvent", []() -> void* {return patterns::events::pad.find(2);});
+    auto camera = findpattern<std::uint32_t>("camera event", []() -> void* {return patterns::events::camera.find(2);});
+    auto drawing = findpattern<std::uint32_t>("drawing event", []() -> void* {return patterns::events::drawing.find(8);});
+    auto loadEventPriority = findpattern<std::uint32_t>("event priority", patterns::events::hard::GetPopulationConfigCall);
+    auto inGameStartup = findpattern<std::uint32_t>("in game startup", []() -> void* {return patterns::events::inGameStartup.find(17);});
+    auto mountDeviceEvent = findpattern<std::uint32_t>("mount device event", patterns::events::hard::GetMountDeviceCall);
+    auto loadEvent = findpattern<std::uint32_t>("event priority", patterns::events::hard::GetLoadEventCall);
+    auto processHookEvent = findpattern<std::uint32_t>("process hook", patterns::events::hard::GetProcessHookAddres);
+
+    /*
     Console::log("PAD : ",std::hex, patterns::events::pad.find(2));
     Console::log("CAMERA : ",std::hex, patterns::events::camera.find(2));
     Console::log("DRAWING : ", std::hex, patterns::events::drawing.find(8));
@@ -129,7 +155,7 @@ void FindPatterns()
     Console::log("Mount device event" , std::hex, patterns::events::hard::GetMountDeviceCall());
     Console::log("Get Load Event ...", std::hex, patterns::events::hard::GetLoadEventCall());
     Console::log("ProcessHook..", std::hex, patterns::events::hard::GetProcessHookAddres());
-    
+    */
 }
 
 #endif
