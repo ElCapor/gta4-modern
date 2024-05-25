@@ -13,3 +13,8 @@ gta4 -> all the dll code
 im tired of writing sick readmes for stuff i dont finish :skull:
 
 BTW the dll unloads itself when u tell it to
+
+# TODO
+
+[] - Make asserts and more checking for AOBs
+[] - write a get near func
