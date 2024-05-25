@@ -42,6 +42,7 @@ namespace patterns
         PATTERN drawing = "E8 ? ? ? ? 83 C4 08 E8 ? ? ? ? E8 ? ? ? ? 83 3D ? ? ? ? 00 74 ?";
         PATTERN inGameStartup = "56 E8 ? ? ? ? A3 ? ? ? ? 89 15 ? ? ? ? E8 ? ? ? ?";
         PATTERN gameEvent = "83 ? ? 3B ? 7D ? 8B 1F 8B B6 80 00 00 00 8B ? 69 ? 88 00 00 00"; // this requires a check for D:E
+        PATTERN FuncAboveProcessHook = "55 8B EC 83 E4 F0 81 EC 84 00 00 00 83 3D ? ? ? ? 00"; // aob to the func on top of process hook
         namespace hard { // these are hard to get
             std::uint32_t GetPopulationConfigCall() // aka load event prior to the game launching
             {
@@ -98,6 +99,14 @@ namespace patterns
                 address = xref_result[0];
                 return address;
             }
+            
+            std::uint32_t GetProcessHookAddres()
+            {
+                auto abovefunc = FuncAboveProcessHook.find(0);
+                auto xref_results = EyeStep::scanner::scan_xrefs((std::uint32_t)abovefunc);
+                auto callAbove = xref_results[0];
+                return callAbove + 5;
+            }
         }
     }
 }
@@ -118,7 +127,8 @@ void FindPatterns()
     Console::log("EVENT PRIORITY ", std::hex, patterns::events::hard::GetPopulationConfigCall());
     Console::log("IN GAME STARTUP", std::hex, patterns::events::inGameStartup.find(17));
     Console::log("Mount device event" , std::hex, patterns::events::hard::GetMountDeviceCall());
-    Console::log("idk bro...", std::hex, patterns::events::hard::GetLoadEventCall());
+    Console::log("Get Load Event ...", std::hex, patterns::events::hard::GetLoadEventCall());
+    Console::log("ProcessHook..", std::hex, patterns::events::hard::GetProcessHookAddres());
     
 }
 
