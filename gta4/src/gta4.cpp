@@ -205,7 +205,13 @@ void FindPatterns()
     //DoHook(processHookEvent, ingameStartupEvent::MainHook);
 
     auto ms_PedPool = findpattern<std::uint32_t>("ms ped pool", patterns::pools::GetPedPool);
-    Cpo
+    auto pool = reinterpret_cast<CPool<CPed>*>(ms_PedPool);
+    Console::log("Pool info, entry size : ",
+    pool->m_nEntrySize,
+    " count ", 
+    pool->m_nCount,
+    " top ",
+    pool->m_nTop);
     /*
     Console::log("PAD : ",std::hex, patterns::events::pad.find(2));
     Console::log("CAMERA : ",std::hex, patterns::events::camera.find(2));
