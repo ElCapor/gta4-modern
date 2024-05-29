@@ -8,7 +8,7 @@
 #include <eyestep/eyestep_utility.h>
 #include <functional>
 #include <injector/injector.hpp>
-#define NO_UI
+//#define NO_UI
 #define FEATURE_FIX_IV_SDK
 
 #ifdef FEATURE_FIX_IV_SDK
@@ -190,6 +190,33 @@ namespace ingameStartupEvent
 };
 #include "class/CPool.hpp"
 #include "class/CPed.hpp"
+
+DWORD WINAPI pool_thread(LPVOID lpParam)
+{
+    CPool<CPed>* pool = static_cast<CPool<CPed>*>(lpParam);
+    while (true)
+    {
+        Console::log("Pool info, entry size : ",
+        pool->m_nEntrySize,
+        " count ", 
+        pool->m_nCount,
+        " top ",
+        pool->m_nTop);
+        if (pool->m_nEntrySize > 0)
+        {
+            for (int i = 0; i < pool->m_nCount; i++)
+	        {
+                if (auto ped = pool->Get(i))
+                {
+                    Console::log("Hello ped");
+                }
+            }
+        }
+        Sleep(10000);
+    }
+    return 0;
+}
+
 void FindPatterns()
 {
     SetupEyestep();
@@ -212,6 +239,7 @@ void FindPatterns()
     pool->m_nCount,
     " top ",
     pool->m_nTop);
+    //CreateThread(0, 0, (LPTHREAD_START_ROUTINE)pool_thread, pool, 0, 0);
     /*
     Console::log("PAD : ",std::hex, patterns::events::pad.find(2));
     Console::log("CAMERA : ",std::hex, patterns::events::camera.find(2));
