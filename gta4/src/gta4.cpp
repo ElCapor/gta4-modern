@@ -7,6 +7,7 @@
 #include <eyestep/eyestep.h>
 #include <eyestep/eyestep_utility.h>
 #include <functional>
+#include <injector/injector.hpp>
 #define NO_UI
 #define FEATURE_FIX_IV_SDK
 
@@ -28,6 +29,12 @@ public:
     void* find(ptrdiff_t offset)
     {
         target = hook::pattern(aob).get_first(offset);
+        return target;
+    }
+
+    void* get(std::uint32_t index, ptrdiff_t offset)
+    {
+        target = hook::pattern(aob).get(index).get<void>(offset);
         return target;
     }
 };
@@ -110,6 +117,17 @@ namespace patterns
             }
         }
     }
+
+    namespace pools {
+        PATTERN ms_PedPool = "64 A1 2C 00 00 00 6A 00 8B 00 6A 10 8B 48 08 6A 1C 8B 01 FF 50 08"; // index 2
+        std::uint32_t GetPedPool()
+        {
+            std::uint32_t ret = 0;
+            auto ptr = (std::uint32_t)hook::pattern(ms_PedPool.aob).get(2).get<void>(36);
+            ret = EyeStep::util::readInt(ptr+1);
+            return ret;
+        }
+    }
 }
 
 
@@ -133,6 +151,45 @@ T findpattern(const char* name, std::function<void*()> fn)
 {
     return findpattern<T>(name, [fn]() -> std::uint32_t {return reinterpret_cast<std::uint32_t>(fn());});
 }
+
+uintptr_t DoHook(uintptr_t address, void(*Function)())
+{
+    if (address) return (uintptr_t)injector::MakeCALL(address, Function);
+    return 0;
+}
+
+namespace ingameStartupEvent
+{
+    uint8_t threadDummy[256];
+    uintptr_t returnAddress;
+    std::list<void(*)()> funcPtrs;
+
+    void Run()
+    {
+        for (auto& f : funcPtrs)
+        {
+            f();
+        }
+    }
+    void __declspec(naked) MainHook()
+    {
+        __asm
+        {
+            pushad
+            call Run
+            popad
+            jmp returnAddress
+        }
+    }
+    // runs right before loading a save, starting a new game, switching episodes, etc.
+    // use this to clean things up
+    void Add(void(*funcPtr)())
+    {
+        funcPtrs.emplace_back(funcPtr);
+    }
+};
+#include "class/CPool.hpp"
+#include "class/CPed.hpp"
 void FindPatterns()
 {
     SetupEyestep();
@@ -145,7 +202,10 @@ void FindPatterns()
     auto mountDeviceEvent = findpattern<std::uint32_t>("mount device event", patterns::events::hard::GetMountDeviceCall);
     auto loadEvent = findpattern<std::uint32_t>("event priority", patterns::events::hard::GetLoadEventCall);
     auto processHookEvent = findpattern<std::uint32_t>("process hook", patterns::events::hard::GetProcessHookAddres);
+    //DoHook(processHookEvent, ingameStartupEvent::MainHook);
 
+    auto ms_PedPool = findpattern<std::uint32_t>("ms ped pool", patterns::pools::GetPedPool);
+    Cpo
     /*
     Console::log("PAD : ",std::hex, patterns::events::pad.find(2));
     Console::log("CAMERA : ",std::hex, patterns::events::camera.find(2));

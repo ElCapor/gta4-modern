@@ -18,3 +18,6 @@ BTW the dll unloads itself when u tell it to
 
 [] - Make asserts and more checking for AOBs
 [] - write a get near func
+
+# Experiments
+![alt text](aob2cpp.png)
