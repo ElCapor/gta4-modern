@@ -128,6 +128,29 @@ namespace patterns
             return ret;
         }
     }
+
+    namespace rage {
+        namespace rage_scr_thread
+        {
+            //! WARNING WARNING WARNING PLEASE GET RID OF THIS SHITTY CODE PLS ONG I SWEAR THIS WILL BLOW UP SOMEONES PC SOME DAY !
+            std::uint32_t get_running_thread()
+            {
+                auto ptr = EyeStep::scanner::scan_xrefs("ERROR!!! Unknown script name ERROR!!!")[0];
+                bool done = false;
+                while (!done) // a bit hacky but i got no choice ong
+                {
+                    ptr--;
+                    if (ptr%16==0)
+                    {
+                        if (EyeStep::util::readByte(ptr) == 0x56 && EyeStep::util::readByte(ptr+1) == 0x8B)
+                            done = true;
+                    }
+                }
+
+                return ptr;
+            }
+        }
+    }
 }
 
 
@@ -229,6 +252,7 @@ void FindPatterns()
     auto mountDeviceEvent = findpattern<std::uint32_t>("mount device event", patterns::events::hard::GetMountDeviceCall);
     auto loadEvent = findpattern<std::uint32_t>("event priority", patterns::events::hard::GetLoadEventCall);
     auto processHookEvent = findpattern<std::uint32_t>("process hook", patterns::events::hard::GetProcessHookAddres);
+    auto m_get_current_thread = findpattern<std::uint32_t>("current thread", patterns::rage::rage_scr_thread::get_running_thread);
     //DoHook(processHookEvent, ingameStartupEvent::MainHook);
 
     auto ms_PedPool = findpattern<std::uint32_t>("ms ped pool", patterns::pools::GetPedPool);
