@@ -8,7 +8,7 @@
 #include <eyestep/eyestep_utility.h>
 #include <functional>
 #include <injector/injector.hpp>
-//#define NO_UI
+#define NO_UI
 #define FEATURE_FIX_IV_SDK
 
 #ifdef FEATURE_FIX_IV_SDK
@@ -130,6 +130,21 @@ namespace patterns
     }
 
     namespace rage {
+
+        std::uint32_t get_d3d_device()
+        {
+            auto ptr = EyeStep::scanner::scan_xrefs("GTA IV cannot be launched over remote desktop.")[0];
+            bool done = false;
+            while (!done) // a bit hacky but i got no choice ong
+            {
+                ptr++;
+                //! TODO : restore bytes alignement, maybe substract 2 or 3 to ptr
+                if (EyeStep::util::readByte(ptr) == 0x89 && EyeStep::util::readByte(ptr+1) == 0x0D)
+                        done = true;
+            }
+            Console::log("ptr", ptr);
+            return EyeStep::util::readInt(ptr+2);
+        }
         namespace rage_scr_thread
         {
             //! WARNING WARNING WARNING PLEASE GET RID OF THIS SHITTY CODE PLS ONG I SWEAR THIS WILL BLOW UP SOMEONES PC SOME DAY !
@@ -146,8 +161,13 @@ namespace patterns
                             done = true;
                     }
                 }
+                auto xref_result = EyeStep::scanner::scan_xrefs(ptr);
+                auto get_name_of_current_script = xref_result[0]; // jmp getscriptname
+                auto relative_call = get_name_of_current_script - 7;
+                auto resolve_call = EyeStep::util::getRel(relative_call); // resolve the relative call
+                auto m_p_current_thread = EyeStep::util::readInt(resolve_call + 1);
 
-                return ptr;
+                return m_p_current_thread;
             }
         }
     }
@@ -253,6 +273,8 @@ void FindPatterns()
     auto loadEvent = findpattern<std::uint32_t>("event priority", patterns::events::hard::GetLoadEventCall);
     auto processHookEvent = findpattern<std::uint32_t>("process hook", patterns::events::hard::GetProcessHookAddres);
     auto m_get_current_thread = findpattern<std::uint32_t>("current thread", patterns::rage::rage_scr_thread::get_running_thread);
+    auto device3d = findpattern<std::uint32_t>("D3D Device", patterns::rage::get_d3d_device);
+
     //DoHook(processHookEvent, ingameStartupEvent::MainHook);
 
     auto ms_PedPool = findpattern<std::uint32_t>("ms ped pool", patterns::pools::GetPedPool);
