@@ -9,6 +9,7 @@
 #include <functional>
 #include <injector/injector.hpp>
 #include <feature/dinput.hpp>
+#include <feature/rage/rage.hpp>
 //#define NO_UI
 #define FEATURE_FIX_IV_SDK
 
@@ -344,6 +345,7 @@ void FindPatterns()
 
     //DoHook(processHookEvent, ingameStartupEvent::MainHook);
 
+    Console::log("hash string test ", rage::utils::HashString(_strdup("admiral"), 0));
     auto ms_PedPool = findpattern<std::uint32_t>("ms ped pool", patterns::pools::GetPedPool);
     auto pool = reinterpret_cast<CPool<CPed>*>(ms_PedPool);
     Console::log("Pool info, entry size : ",
