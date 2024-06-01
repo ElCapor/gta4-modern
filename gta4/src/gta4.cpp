@@ -56,9 +56,13 @@ bool is_instruction(std::uint32_t address, std::uint8_t instruction)
 /// @brief Compare the value of the address to an array of instructions
 /// @param address address to check the instructions at
 /// @param instructions the instructions
+/// @param align_bytes the number of bytes the address should be aligned to, defaults to one
 /// @return true if same else false
-bool compare_instructions(std::uint32_t address, std::vector<std::uint8_t> instructions)
+bool compare_instructions(std::uint32_t address, std::vector<std::uint8_t> instructions, int align_bytes = 1)
 {
+    if (address % align_bytes !=0)
+        return false;
+        
     for (int i =0; i <instructions.size(); i++)
     {
         if (!is_instruction(address + i, instructions[i]))
@@ -112,7 +116,7 @@ std::uint32_t get_next_instruction_set(std::uint32_t address,std::vector<uint8_t
 std::uint32_t get_previous_instruction_set(std::uint32_t address,std::vector<uint8_t> instructions, int max_distance = 50, int align_bytes = 1)
 {
     int distance = 0; // current distance from the address
-    while (!compare_instructions(address, instructions) || distance <= max_distance)
+    while (!compare_instructions(address, instructions, align_bytes) || distance <= max_distance)
     {
         GoBackward(address);
         distance++;
