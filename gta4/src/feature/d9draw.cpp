@@ -23,7 +23,11 @@ HRESULT d9draw::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
 		InitImGui(D3D9Device);
 
 	if (GetAsyncKeyState(VK_DELETE) & 1)
+	{
 		bDisplay = !bDisplay;
+		d9::isMouseWanted = !d9::isMouseWanted;
+	}
+		
 
 	if (GetAsyncKeyState(VK_F8) & 1)
 	{

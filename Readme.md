@@ -56,3 +56,5 @@ ItsClonkAndre - Developer of IV SDK NET, helped me a lot
 GTA IV Modding Server - supported me and helped me understand some stuff
 
 ElCapor - Developer
+
+IF you might be the developer of a portion of code that has been used here and i didn't credit you feel free to open an issue

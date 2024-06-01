@@ -8,7 +8,8 @@
 #include <eyestep/eyestep_utility.h>
 #include <functional>
 #include <injector/injector.hpp>
-#define NO_UI
+#include <feature/dinput.hpp>
+//#define NO_UI
 #define FEATURE_FIX_IV_SDK
 
 #ifdef FEATURE_FIX_IV_SDK
@@ -39,6 +40,8 @@ public:
     }
 };
 
+/// @brief Eyestep utilities that make your life easier
+/// @author ElCapor
 namespace EyeStep
 {
 namespace util
@@ -214,7 +217,7 @@ namespace patterns
         std::uint32_t get_d3d_device()
         {
             auto ptr = EyeStep::scanner::scan_xrefs("GTA IV cannot be launched over remote desktop.")[0];
-            //! TODO : restore bytes alignement, maybe substract 2 or 3 to ptr
+            //TODO : restore bytes alignement, maybe substract 2 or 3 to ptr
             ptr = EyeStep::util::get_next_instruction_set(ptr, {0x89, 0x0D}, 100);
             Console::log("ptr", ptr);
             return EyeStep::util::readInt(ptr+2);
@@ -222,7 +225,6 @@ namespace patterns
         namespace rage_scr_thread
         {
             //? The code was cleaned up, it won't blow anyone's pc anymore
-            //! WARNING WARNING WARNING PLEASE GET RID OF THIS SHITTY CODE PLS ONG I SWEAR THIS WILL BLOW UP SOMEONES PC SOME DAY !
             std::uint32_t get_running_thread()
             {
                 auto ptr = EyeStep::scanner::scan_xrefs("ERROR!!! Unknown script name ERROR!!!")[0];
@@ -372,6 +374,7 @@ DWORD WINAPI gta4::MainThread()
     //CMetaData::init();
     //Console::log("Base : ", std::hex, CMetaData::begin());
     #ifndef NO_UI
+    dinput::InitHook();
     d9::hDDLModule = globals::hDll;
     d9::HookDirectX();
     #endif

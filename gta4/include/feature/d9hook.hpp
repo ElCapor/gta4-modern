@@ -9,6 +9,7 @@ using tReset = HRESULT(APIENTRY*)(D3DPRESENT_PARAMETERS* pPresentationParameters
 
 class d9
 {
+	friend class d9draw;
 public:
 	static IDirect3DDevice9* pDevice;
 	static tEndScene oEndScene;
@@ -20,12 +21,14 @@ public:
 	static void HookWindow();
 	static void UnHookWindow();
 
+	static bool WantsMouse(); // does imgui/d9 want the mouse ?
+
 private:
 	static int windowHeight, windowWidth;
 	static void* d3d9Device[119];
 	static WNDPROC OWndProc;
 	static tReset oReset;
-
+	static bool isMouseWanted;
 
 	static BOOL CALLBACK enumWind(HWND handle, LPARAM lp);
 	static HWND GetProcessWindow();

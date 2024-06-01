@@ -16,6 +16,8 @@ int d9::windowWidth = 0; // Width of the window
 void* d9::d3d9Device[119]; // Array of pointer of the DirectX functions.
 WNDPROC d9::OWndProc = nullptr; // Pointer of the original window message handler.
 
+bool d9::isMouseWanted = true;
+
 /**
     @brief : Function that hook the Reset and EndScene function.
 **/
@@ -151,6 +153,10 @@ void d9::UnHookWindow()
 	SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)OWndProc);
 }
 
+bool d9::WantsMouse()
+{
+    return isMouseWanted;
+}
 /**
     @brief : A callback function, which you define in your application, that processes messages sent to a window. (https://learn.microsoft.com/en-us/windows/win32/api/winuser/nc-winuser-wndproc)
     @param  hWnd : A handle to the window.
@@ -163,25 +169,15 @@ LRESULT WINAPI d9::WndProc(const HWND hWnd, const UINT msg, const WPARAM wParam,
 {
 	if (d9draw::bDisplay && ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam))
 	{
-		ImGui::GetIO().MouseDrawCursor = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
+		//ImGui::GetIO().MouseDrawCursor = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 		return true;	
 	}
-
-	if(d9draw::bInit)
-		ImGui::GetIO().MouseDrawCursor = ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow);
 
 	if (msg == WM_CLOSE)
 	{
 		UnHookDirectX();
 		UnHookWindow();
 		TerminateProcess(GetCurrentProcess(), 0);
-	}
-
-	if (ImGui::GetIO().WantCaptureMouse)
-	{
-		if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
-			return true;
-		return false;
 	}
 	
 	return CallWindowProc(OWndProc, hWnd, msg, wParam, lParam);

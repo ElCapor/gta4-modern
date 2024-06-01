@@ -20,7 +20,7 @@ target("gta4dll")
     remove_files("src/feature/rage/scr/scrThreadHook.cpp")
     remove_files(("src/standalone.cpp"))
 
-    add_links("d3d9", "detours.lib")
+    add_links("d3d9", "detours.lib", "user32", "dxguid", "dinput8")
     add_packages("asmjit", "capstone", "asmtk")
 --[[
 target("gta4exe")
