@@ -8,7 +8,7 @@ bool d9draw::bDisplay = true; // Status of the menu display.
 bool d9draw::bSetPos = false; // Status to update ImGui window size / position.
 ImVec2 d9draw::vWindowPos = { 0, 0 }; // Last ImGui window position.
 ImVec2 d9draw::vWindowSize = { 0, 0 }; // Last ImGui window size.
-
+std::vector<d9widget*> d9draw::aWidgets = {};
 /**
     @brief : Hook of the EndScene function.
     @param  D3D9Device : Current Direct3D9 Device Object.
@@ -42,26 +42,15 @@ HRESULT d9draw::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
 
 	if (bDisplay)
 	{
-		ImGui::Begin("Menu Window Title", &bDisplay);
+		for (auto& widget : d9draw::aWidgets)
 		{
-			ImGui::SetWindowSize({ 500, 300 }, ImGuiCond_Once);
-
-			if (vWindowPos.x != 0.0f && vWindowPos.y != 0.0f && vWindowSize.x != 0.0f && vWindowSize.y != 0.0f && bSetPos)
+			if (!widget->IsInit())
 			{
-				ImGui::SetWindowPos(vWindowPos);
-				ImGui::SetWindowSize(vWindowSize);
-				bSetPos = false;
+				widget->Init();
+				widget->IsInit() = true;
 			}
-
-			if (bSetPos == false)
-			{
-				vWindowPos = {ImGui::GetWindowPos().x, ImGui::GetWindowPos().y};
-				vWindowSize = {ImGui::GetWindowSize().x, ImGui::GetWindowSize().y};
-			}
-
-			ImGui::Text("Draw your menu here.");
+			widget->Render(ImGui::GetIO().DeltaTime);
 		}
-		ImGui::End();
 	}
 
 	ImGui::EndFrame();
@@ -71,6 +60,10 @@ HRESULT d9draw::hkEndScene(const LPDIRECT3DDEVICE9 D3D9Device)
 	return d9::oEndScene(D3D9Device);
 }
 
+void d9draw::RegisterWidget(d9widget *widget)
+{
+	d9draw::aWidgets.push_back(widget);
+}
 /**
     @brief : function that init ImGui for rendering.
     @param pDevice : Current Direct3D9 Device Object given by the hooked function.

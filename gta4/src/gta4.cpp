@@ -327,6 +327,19 @@ DWORD WINAPI pool_thread(LPVOID lpParam)
     }
     return 0;
 }
+#include <feature/d9draw.hpp>
+class DebugMenu : public d9widget
+{
+    void Init() override
+    {
+        Console::log("Starting Debug Menu lmao");
+    }
+
+    void Render(float dt) override
+    {
+        ImGui::ShowDemoWindow();
+    }
+};
 
 void FindPatterns()
 {
@@ -379,6 +392,7 @@ DWORD WINAPI gta4::MainThread()
     dinput::InitHook();
     d9::hDDLModule = globals::hDll;
     d9::HookDirectX();
+    d9draw::RegisterWidget(new DebugMenu());
     #endif
     #ifndef FEATURE_FIX_IV_SDK
     rage::scr::hookScr();
