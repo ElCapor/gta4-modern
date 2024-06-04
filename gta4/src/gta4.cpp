@@ -269,67 +269,19 @@ uintptr_t DoHook(uintptr_t address, void(*Function)())
     return 0;
 }
 
-namespace ingameStartupEvent
+template<typename T> T& GetRef(uint32_t address)
 {
-    uint8_t threadDummy[256];
-    uintptr_t returnAddress;
-    std::list<void(*)()> funcPtrs;
+    return *reinterpret_cast<T*>(address);
+}
 
-    void Run()
-    {
-        for (auto& f : funcPtrs)
-        {
-            f();
-        }
-    }
-    void __declspec(naked) MainHook()
-    {
-        __asm
-        {
-            pushad
-            call Run
-            popad
-            jmp returnAddress
-        }
-    }
-    // runs right before loading a save, starting a new game, switching episodes, etc.
-    // use this to clean things up
-    void Add(void(*funcPtr)())
-    {
-        funcPtrs.emplace_back(funcPtr);
-    }
-};
 #include "class/CPool.hpp"
 #include "class/CPed.hpp"
 
-DWORD WINAPI pool_thread(LPVOID lpParam)
-{
-    CPool<CPed>* pool = static_cast<CPool<CPed>*>(lpParam);
-    while (true)
-    {
-        Console::log("Pool info, entry size : ",
-        pool->m_nEntrySize,
-        " count ", 
-        pool->m_nCount,
-        " top ",
-        pool->m_nTop);
-        if (pool->m_nEntrySize > 0)
-        {
-            for (int i = 0; i < pool->m_nCount; i++)
-	        {
-                if (auto ped = pool->Get(i))
-                {
-                    Console::log("Hello ped");
-                }
-            }
-        }
-        Sleep(10000);
-    }
-    return 0;
-}
 #include <feature/d9draw.hpp>
+CPool<CPed>* g_pedPool;
 class DebugMenu : public d9widget
 {
+    public:
     void Init() override
     {
         Console::log("Starting Debug Menu lmao");
@@ -337,8 +289,9 @@ class DebugMenu : public d9widget
 
     void Render(float dt) override
     {
-        ImGui::ShowDemoWindow();
+        
     }
+
 };
 
 void FindPatterns()
@@ -355,29 +308,6 @@ void FindPatterns()
     auto processHookEvent = findpattern<std::uint32_t>("process hook", patterns::events::hard::GetProcessHookAddres);
     auto m_get_current_thread = findpattern<std::uint32_t>("current thread", patterns::rage::rage_scr_thread::get_running_thread);
     auto device3d = findpattern<std::uint32_t>("D3D Device", patterns::rage::get_d3d_device);
-
-    //DoHook(processHookEvent, ingameStartupEvent::MainHook);
-
-    Console::log("hash string test ", rage::utils::HashString(_strdup("admiral"), 0));
-    auto ms_PedPool = findpattern<std::uint32_t>("ms ped pool", patterns::pools::GetPedPool);
-    auto pool = reinterpret_cast<CPool<CPed>*>(ms_PedPool);
-    Console::log("Pool info, entry size : ",
-    pool->m_nEntrySize,
-    " count ", 
-    pool->m_nCount,
-    " top ",
-    pool->m_nTop);
-    //CreateThread(0, 0, (LPTHREAD_START_ROUTINE)pool_thread, pool, 0, 0);
-    /*
-    Console::log("PAD : ",std::hex, patterns::events::pad.find(2));
-    Console::log("CAMERA : ",std::hex, patterns::events::camera.find(2));
-    Console::log("DRAWING : ", std::hex, patterns::events::drawing.find(8));
-    Console::log("EVENT PRIORITY ", std::hex, patterns::events::hard::GetPopulationConfigCall());
-    Console::log("IN GAME STARTUP", std::hex, patterns::events::inGameStartup.find(17));
-    Console::log("Mount device event" , std::hex, patterns::events::hard::GetMountDeviceCall());
-    Console::log("Get Load Event ...", std::hex, patterns::events::hard::GetLoadEventCall());
-    Console::log("ProcessHook..", std::hex, patterns::events::hard::GetProcessHookAddres());
-    */
 }
 
 #endif

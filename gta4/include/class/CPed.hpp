@@ -5,7 +5,8 @@
 class CPed
 {
 public:
-	uint8_t pad[0x10];													// 000-010
+	char pad[0x210];
+	uint8_t bDead;												// 000-010
 
 };
 
